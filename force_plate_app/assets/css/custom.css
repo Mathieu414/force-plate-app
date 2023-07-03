@@ -1,0 +1,116 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 5rem;
+  padding: 2rem 1rem;
+  background-color: #f4f4f4;
+  z-index: 1050;
+  transition: width 0.3s ease-in-out;
+}
+
+/* when the user hovers on the sidebar, expand it */
+.sidebar:hover {
+  width: 17rem;
+}
+
+/* make sure the contents of the navlink don't wrap when navbar collapses */
+.sidebar .nav-link {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* fix the width of the icons */
+.sidebar .nav-link i {
+  width: 1rem;
+}
+
+/* hide the navlink labels by default */
+.sidebar .nav-link:not(.sidebar-header) span {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.1s ease-in-out;
+  margin-left: 6pt;
+}
+
+.sidebar .sidebar-header span {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.1s ease-in-out;
+  margin-left: 17pt;
+  margin-bottom: 3pt;
+  font-size: 17pt;
+}
+/* when the sidebar is hovered, reveal the labels */
+.sidebar:hover .nav-link span {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* container for the sidebar header. make sure the contents don't wrap when
+   * the sidebar is collapsed.
+   */
+.sidebar-header {
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  padding-left: 0.7rem !important;
+}
+
+/* position the header relative to the logo and hide by default */
+.sidebar-header i {
+  font-size: 17pt;
+}
+
+.card-chart {
+  background-color: #fff;
+  border-radius: 8px;
+  margin: 0;
+  margin-left: 0;
+  padding: 0;
+  transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  box-shadow: 0px 2px 10px 0px rgb(58 53 65 / 10%);
+}
+
+.card-chart-container {
+  padding-top: 24px 24px 0px 0px;
+}
+
+.page-wrapper {
+  margin-left: 9rem;
+  margin-right: 4rem;
+  margin-top: 1rem;
+  max-height: 90% !important;
+}
+
+.nav-link.active {
+  background-color: #0084d6 !important;
+  color: #fff !important;
+  box-shadow: 0 2px 4px 0 rgba(32, 121, 255, 0.308) !important;
+}
+
+.nav-link.active:hover {
+  color: #fff !important;
+}
+
+.nav-link:hover {
+  color: #0084d6 !important;
+}
+
+.fs-sm {
+  font-size: 0.7rem;
+}
+
+footer {
+  margin-top: 1.5rem;
+  margin-left: 4rem;
+}
+
+.bottom-div {
+  padding-left: 9em;
+  padding-right: 4rem;
+}
