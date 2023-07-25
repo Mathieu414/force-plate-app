@@ -3,7 +3,7 @@ from .Footer import Footer
 from .GraphCard import GraphCard
 from .NavbarVertical import sidebar
 from .StartStopCalibrate import StartStopCalibrate
-from .TestIntroCard import TestIntroCard
+from .IntroCard import TestIntroCard
 from .ValueCard import ValueCard
 from .WeightCard import WeightCard
 from .Sliders import Sliders

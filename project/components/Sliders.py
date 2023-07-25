@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
-from dash import html, dcc
+from dash import html, dcc, callback, Input, Output, State
 
-Sliders = dbc.Row(
+sliders_content = dbc.Row(
     [
         dbc.Col(
             children=[
@@ -43,3 +43,31 @@ Sliders = dbc.Row(
         ),
     ],
 )
+
+Sliders = html.Div(
+    [
+        dbc.Row(
+            dbc.Col(
+                dbc.Button(
+                    html.I(className="fa fa-gear fa-xl"),
+                    color="light",
+                    id="collapse-button",
+                ),
+                width=1,
+            ),
+            justify="end",
+        ),
+        dbc.Collapse(sliders_content, id="collapse", is_open=False),
+    ]
+)
+
+
+@callback(
+    Output("collapse", "is_open"),
+    [Input("collapse-button", "n_clicks")],
+    [State("collapse", "is_open")],
+)
+def toggle_collapse(n, is_open):
+    if n:
+        return not is_open
+    return is_open

@@ -1,8 +1,4 @@
-from components import sidebar
-from components import Footer
-from components import StartStopCalibrate
-
-from utils.database import db, Users
+from components import sidebar, Footer, StartStopCalibrate
 
 # manage logins
 from flask_login import LoginManager, UserMixin, current_user
@@ -53,28 +49,15 @@ server.config.update(
     SQLALCHEMY_DATABASE_URI="sqlite:///data.sqlite",
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
 )
-db.init_app(server)
-
-login_manager = LoginManager()
-
-login_manager.init_app(server)
-
-
-class Users(UserMixin, Users):
-    pass
-
-
-# callback to reload the user object
-@login_manager.user_loader
-def load_user(user_id):
-    return Users.query.get(int(user_id))
 
 
 app.layout = html.Div(
     [
         html.Div(id="sidebar-div"),
         html.Div(
-            className="page-wrapper", id="page-content", children=dash.page_container
+            className="page-wrapper",
+            id="page-content",
+            children=[dash.page_container, Footer],
         ),
         dcc.Store(id="fz-range"),
         dcc.Location(id="url"),
@@ -89,16 +72,6 @@ app.layout = html.Div(
 def set_z_range(value):
     print(value)
     return value
-
-
-@callback(
-    Output("user-status-header", "children"),
-    Input("url", "pathname"),
-)
-def update_authentication_status(_):
-    if current_user.is_authenticated:
-        return dcc.Link("logout", href="/logout")
-    return dcc.Link("login", href="/login")
 
 
 @callback(

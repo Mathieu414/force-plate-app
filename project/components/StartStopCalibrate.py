@@ -11,14 +11,14 @@ button1 = dbc.Button(
     button1_content,
     id="start",
     color="success",
-    className="ml-3",
+    class_name="ml-3",
     style=button_style,
     size="lg",
 )
 
 button2_content = "Arrêter"
 button2 = dbc.Button(
-    button2_content, id="end", color="danger", className="ml-3", style=button_style
+    button2_content, id="end", color="danger", class_name="ml-3", style=button_style
 )
 
 button3_content = "Calibrer"
@@ -26,7 +26,7 @@ button3 = dbc.Button(
     button3_content,
     id="calibration-button",
     color="info",
-    className="ml-3",
+    class_name="ml-3",
     style=button_style,
     n_clicks=0,
 )

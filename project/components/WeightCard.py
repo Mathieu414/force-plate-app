@@ -6,37 +6,38 @@ import time
 from utils.nidaq import nidaq_base_config
 
 
-WeightCard = dbc.Card(
-    className="text-center",
-    children=dbc.CardBody(
-        children=[
-            html.H3(
-                className="mb-1 mt-2 card-title",
-                style={"font-size": "3vw"},
-                children="0",
-                id="display-user-weight-1",
-            ),
-            html.H2("KG"),
-            html.Small(
-                children="Poids de l'athlète sans charge",
-            ),
-            html.Div(
-                className="text-center",
-                children=[
-                    dbc.Button(
-                        "Mesurer",
-                        color="info",
-                        id="user-weighting-1",
-                    ),
-                ],
-            ),
-            html.P(["Poids actuel : ", html.Span(id="weight-display")]),
-        ],
-        className="my-auto",
-        style={"flex": 0},
-    ),
-    style={"height": "38vh"},
-)
+def WeightCard(height=38):
+    return dbc.Card(
+        class_name="text-center",
+        children=dbc.CardBody(
+            children=[
+                html.H3(
+                    className="mb-1 mt-2 card-title",
+                    style={"font-size": "3vw"},
+                    children="0",
+                    id="display-user-weight-1",
+                ),
+                html.H2("KG"),
+                html.Small(
+                    children="Poids de l'athlète sans charge",
+                ),
+                html.Div(
+                    className="text-center",
+                    children=[
+                        dbc.Button(
+                            "Mesurer",
+                            color="info",
+                            id="user-weighting-1",
+                        ),
+                    ],
+                ),
+                html.P(["Poids actuel : ", html.Span(id="weight-display")]),
+            ],
+            class_name="my-auto",
+            style={"flex": 0},
+        ),
+        style={"height": str(height) + "vh"},
+    )
 
 
 @callback(
@@ -64,9 +65,11 @@ def display_weight(n_clicks, value):
 @callback(
     Output("weight-display", "children"),
     Input("weight-data", "data"),
+    State("fz-range", "data"),
 )
-def display_weight(data):
+def display_weight(data, value):
     if data is not None:
+        data = data * 9.80665
         return round(data, 2)
     else:
         return "Pas de donnée"

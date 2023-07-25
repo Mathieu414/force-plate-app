@@ -114,3 +114,10 @@ footer {
   padding-left: 9em;
   padding-right: 4rem;
 }
+
+.modal-dialog-bottom {
+  display: flex;
+  align-items: flex-end;
+  min-height: calc(100% - var(--bs-modal-margin) * 2);
+  overflow-y: auto;
+}

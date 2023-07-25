@@ -2,6 +2,7 @@ import pandas as pd
 from dash import html, dcc
 import pandas as pd
 from dash import Input, Output, State, callback, ctx, no_update
+from dash.exceptions import PreventUpdate
 import nidaqmx
 import plotly.graph_objects as go
 import numpy as np
@@ -40,6 +41,7 @@ GraphCard = dbc.Card(
 
 @callback(
     Output("daq-chart", "figure"),
+    Output("complete-graph", "figure"),
     Output("force-card-text", "children"),
     Output("velocity-card-text", "children"),
     Output("max-speed-card-text", "children"),
@@ -47,25 +49,31 @@ GraphCard = dbc.Card(
     Output("profile-data", "data"),
     Input("start", "n_clicks"),
     Input("profile-reset-button", "n_clicks"),
+    Input("datatable-fvp", "derived_virtual_data"),
     State("weight-data", "data"),
     State("profile-data", "data"),
     State("load-input", "value"),
     prevent_initial_call=True,
 )
-def data_acquisition_start(start, n, weight, stored_profile, load):
+def data_acquisition_start(start, n, rows, weight, stored_profile, load):
     if ctx.triggered_id == "start":
         print("start acquisition")
 
-        data = nidaq_trigger(weight)
+        data, global_data = nidaq_trigger(weight, load)
 
         num_samples = len(data[0])
 
         time = np.linspace(0, num_samples / sampling_rate, num_samples)
+        global_time = np.linspace(
+            0, len(global_data[0]) / sampling_rate, len(global_data[0])
+        )
         # Create traces
         fig = go.Figure()
+        global_fig = go.Figure()
 
         # compute the force and velocity values
-        sum_newton = np.sum(np.array(data)[4:7], axis=0) / 0.0018
+        sum_newton = np.sum(np.array(data)[4:8], axis=0) / 0.0018
+        global_sum = np.sum(np.array(global_data)[4:8], axis=0) / 0.0018
 
         # force is very straight-forward
         mean_newton = np.mean(sum_newton)
@@ -79,7 +87,21 @@ def data_acquisition_start(start, n, weight, stored_profile, load):
         fig.add_trace(
             go.Scatter(x=time, y=sum_newton, mode="lines", name=("Vertical force (N)"))
         )
+        for i in global_data:
+            global_fig.add_trace(
+                go.Scatter(
+                    x=global_time,
+                    y=i,
+                    mode="lines",
+                    name=("Vertical force (N)"),
+                )
+            )
         fig.update_layout(
+            margin=dict(l=10, r=10, t=10, b=20),
+            xaxis_title="Temps (s)",
+            yaxis_title="Force (N)",
+        )
+        global_fig.update_layout(
             margin=dict(l=10, r=10, t=10, b=20),
             xaxis_title="Temps (s)",
             yaxis_title="Force (N)",
@@ -88,10 +110,15 @@ def data_acquisition_start(start, n, weight, stored_profile, load):
         mean_velocity = np.mean(velocity)
 
         if stored_profile is None:
-            stored_profile = [[mean_newton], [mean_velocity]]
+            stored_profile = [
+                [mean_newton],
+                [mean_velocity],
+                [load],
+            ]
         else:
             stored_profile[0].append(mean_newton)
             stored_profile[1].append(mean_velocity)
+            stored_profile[2].append(load)
 
         power = sum_newton * velocity
 
@@ -99,6 +126,7 @@ def data_acquisition_start(start, n, weight, stored_profile, load):
 
         return (
             fig,
+            global_fig,
             round(mean_newton),
             round(mean_velocity, 2),
             round(velocity[-1], 2),
@@ -106,7 +134,29 @@ def data_acquisition_start(start, n, weight, stored_profile, load):
             stored_profile,
         )
     if ctx.triggered_id == "profile-reset-button":
-        return no_update, no_update, no_update, no_update, no_update, None
+        return no_update, no_update, no_update, no_update, no_update, no_update, None
+
+    if ctx.triggered_id == "datatable-fvp":
+        print("data_table_interactivity")
+        if stored_profile is not None:
+            if rows != []:
+                df = pd.DataFrame(rows)
+                stored_profile = [
+                    df["Force (N)"].values.tolist(),
+                    df["Vitesse (m/s)"].values.tolist(),
+                    df["Poids (kg)"].values.tolist(),
+                ]
+            return (
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                stored_profile,
+            )
+        else:
+            raise PreventUpdate
 
 
 @callback(
@@ -161,8 +211,12 @@ def nidaq_start_stop():
     return samples
 
 
-def nidaq_trigger(weight):
+def nidaq_trigger(weight, load):
+    if load is None:
+        load = 0
+
     samples = [[] for x in range(8)]
+    global_samples = [[] for x in range(8)]
     with nidaqmx.Task() as task:
         task.ai_channels.add_ai_voltage_chan(
             ",".join(channels), terminal_config=TerminalConfiguration.DIFF
@@ -184,11 +238,14 @@ def nidaq_trigger(weight):
 
             new_data = np.array(task.read(number_of_samples_per_channel=1000))
 
-            new_data_z = np.sum(new_data[-4:7], axis=0)
+            for i, v in enumerate(global_samples):
+                global_samples[i].extend(new_data[i])
+
+            new_data_z = np.sum(new_data[-4:], axis=0)
 
             # Define the threshold
-            above_threshold = new_data_z > (weight * 0.0018 * 9.80665 + 0.15)
-            under_threshold = new_data_z < (weight * 0.0018 * 9.80665 + 0.15)
+            above_threshold = new_data_z > ((weight + load) * 0.0018 * 9.80665 + 0.05)
+            under_threshold = new_data_z < ((weight + load) * 0.0018 * 9.80665)
 
             global trigger_control
             global measurement_end
@@ -197,16 +254,16 @@ def nidaq_trigger(weight):
 
             last_index = -1
 
-            for i in range(len(new_data_z) - 9):
-                next_above_threshold = np.all(above_threshold[i : i + 10])
-                next_under_threshold = np.all(under_threshold[i : i + 10])
+            for i in range(len(new_data_z) - 19):
+                next_above_threshold = np.all(above_threshold[i : i + 20])
+                next_under_threshold = np.all(under_threshold[i : i + 20])
                 # if the trigger is off and the threshold is detected
-                if not trigger_control and next_above_threshold:
-                    first_index = i
+                if not trigger_control and next_above_threshold and not measurement_end:
+                    first_index = i - 10 if i - 10 >= 0 else 0
                     print("trigger on")
                     trigger_control = True
                 # if the trigger is on and the data goes under the threshold
-                if trigger_control and next_under_threshold:
+                if trigger_control and next_under_threshold and not measurement_end:
                     last_index = i
                     print("trigger off")
                     print(first_index)
@@ -237,4 +294,4 @@ def nidaq_trigger(weight):
             if time.time() > timeout or measurement_end:
                 break
 
-    return samples
+    return samples, global_samples

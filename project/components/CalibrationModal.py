@@ -31,7 +31,7 @@ CalibrationModal = html.Div(
                     dbc.Button(
                         "Close",
                         id="calibration-modal-close",
-                        className="ms-auto",
+                        class_name="ms-auto",
                         n_clicks=0,
                     )
                 ),

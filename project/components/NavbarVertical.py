@@ -10,17 +10,17 @@ sidebar = html.Aside(
                         [
                             html.I(className="fas fa-dumbbell"),
                             html.Span("Force plate app"),
-                        ], href="/",
+                        ],
+                        href="/",
                         active="exact",
-                        className="pe-3 sidebar-header"
+                        class_name="pe-3 sidebar-header",
                     ),
                     html.Hr(),
                     dbc.NavLink(
-                        [html.I(className="fas fa-user-check"),
-                         html.Span("Test")],
+                        [html.I(className="fas fa-user-check"), html.Span("Test")],
                         href="/test",
                         active="exact",
-                        className="pe-3"
+                        class_name="pe-3",
                     ),
                     dbc.NavLink(
                         [
@@ -29,7 +29,7 @@ sidebar = html.Aside(
                         ],
                         href="/seance",
                         active="exact",
-                        className="pe-3"
+                        class_name="pe-3",
                     ),
                     dbc.NavLink(
                         [
@@ -38,11 +38,13 @@ sidebar = html.Aside(
                         ],
                         href="/libre",
                         active="exact",
-                        className="pe-3"
+                        class_name="pe-3",
                     ),
                 ],
                 vertical=True,
-                pills=True
+                pills=True,
             ),
-        ], className="sidebar")
+        ],
+        className="sidebar",
+    )
 )
