@@ -121,3 +121,8 @@ footer {
   min-height: calc(100% - var(--bs-modal-margin) * 2);
   overflow-y: auto;
 }
+
+/* margins around the export button of the datatable */
+.export {
+  margin: 5px;
+}

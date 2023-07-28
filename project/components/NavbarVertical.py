@@ -31,15 +31,6 @@ sidebar = html.Aside(
                         active="exact",
                         class_name="pe-3",
                     ),
-                    dbc.NavLink(
-                        [
-                            html.I(className="fas fa-lock-open"),
-                            html.Span("Libre"),
-                        ],
-                        href="/libre",
-                        active="exact",
-                        class_name="pe-3",
-                    ),
                 ],
                 vertical=True,
                 pills=True,

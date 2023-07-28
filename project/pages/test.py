@@ -56,6 +56,7 @@ layout = html.Div(
                 )
             ),
             class_name="mb-2",
+            # style={"display": "none"},
         ),
         dbc.Row(
             children=[
@@ -129,15 +130,15 @@ layout = html.Div(
                             id="datatable-fvp",
                             editable=True,
                             row_deletable=True,
-                            selected_rows=[],
+                            export_format="xlsx",
                         ),
                     ],
                 ),
             ],
             justify="center",
         ),
-        dcc.Store(id="weight-data", storage_type="session"),
         dcc.Store(id="profile-data", storage_type="session"),
+        dcc.Store(id="graph-data", storage_type="session"),
     ]
 )
 
@@ -153,7 +154,7 @@ def update_profile_chart(data):
             yaxis_title="Force",
             xaxis_title="Vitesse",
         )
-        figure.update_traces(hovertemplate="Poids : %{text}", text=data[2])
+        figure.update_traces(hovertemplate="Poids : %{text}", text=data[3])
         return figure
     else:
         return go.Figure().update_layout(
@@ -167,7 +168,6 @@ def update_profile_chart(data):
 def set_datatable(profile_data):
     if profile_data is not None:
         df = pd.DataFrame(profile_data).transpose()
-        df.columns = ["Force (N)", "Vitesse (m/s)", "Poids (kg)"]
-        df["Puissance (Watts)"] = df["Force (N)"] * df["Vitesse (m/s)"]
+        df.columns = ["Force (N)", "Vitesse (m/s)", "Puissance (Watts)", "Poids (kg)"]
         df = df.round(2)
         return df.to_dict("records")

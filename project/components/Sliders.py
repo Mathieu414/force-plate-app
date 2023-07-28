@@ -16,7 +16,7 @@ sliders_content = dbc.Row(
                         2.5: "2.5kN",
                         5: "5kN",
                     },
-                    value=2.5,
+                    value=5,
                     id="range-slider",
                 ),
             ],
