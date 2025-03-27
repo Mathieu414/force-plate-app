@@ -4,16 +4,47 @@ from dash.exceptions import PreventUpdate
 import nidaqmx
 from utils.nidaq import nidaq_base_config
 
-button_style = {"font-size": "20px"}
+
+WeightingModal = dbc.Modal(
+    [
+        dbc.ModalHeader(dbc.ModalTitle("Pesée ...")),
+        dbc.ModalBody(
+            children=[
+                dbc.Spinner(size="sm"),
+                " Pesée en cours...",
+                "Montez sur la plateforme avec vos poids et attendez le top départ ⏲️",
+            ]
+        ),
+    ],
+    id="weighting-modal",
+    is_open=False,
+)
+
+GoModal = dbc.Modal(
+    [
+        dbc.ModalHeader(dbc.ModalTitle("Séance")),
+        dbc.ModalBody(
+            children=[
+                "Vous pouvez commencer la séance ! 🚀",
+            ]
+        ),
+    ],
+    id="go-modal",
+    is_open=False,
+)
+
+button_style = {"fontSize": "20px"}
 
 button1_content = "Démarrer"
-button1 = dbc.Button(
-    button1_content,
-    id="start",
-    color="success",
-    class_name="ml-3",
-    style=button_style,
-    size="lg",
+button1 = dcc.Loading(
+    dbc.Button(
+        button1_content,
+        id="start",
+        color="success",
+        class_name="ml-3",
+        style=button_style,
+        size="lg",
+    )
 )
 
 button2_content = "Arrêter"

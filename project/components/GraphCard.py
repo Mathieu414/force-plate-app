@@ -12,9 +12,8 @@ from utils.nidaq import (
     channels,
 )
 from nidaqmx.constants import TerminalConfiguration, AcquisitionType
-from utils.utils import substract_arrays
+from utils.utils import analyse_jump
 import time
-import scipy.integrate as it
 
 controller = False
 
@@ -42,6 +41,8 @@ GraphCard = dbc.Card(
     Output("max-speed-card-text", "children"),
     Output("power-card-text", "children"),
     Output("profile-data", "data"),
+    Output("alert-div", "children"),
+    Output("start", "children"),
     Input("start", "n_clicks"),
     Input("profile-reset-button", "n_clicks"),
     Input("datatable-fvp", "derived_virtual_data"),
@@ -60,73 +61,97 @@ def data_acquisition_start(start, n, rows, weight, stored_profile, load, fz_rang
 
         data, global_data = nidaq_trigger(weight, load, fz_range)
 
-        if data != []:
-            (
-                time,
-                sum_newton,
-                mean_newton,
-                velocity,
-                mean_velocity,
-                mean_power,
-            ) = analyse_jump(data, weight, load, fz_range)
-
-            global_time = np.linspace(
-                0, len(global_data) / sampling_rate, len(global_data)
+        if data == []:
+            alert_message = dbc.Alert(
+                "Pas de données reçues. Veuillez réessayer, vérifier les insctructions ou contacter le support.",
+                color="danger",
+                dismissable=True,
             )
-            # Create traces
-            fig = go.Figure()
-            global_fig = go.Figure()
-
-            fig.add_trace(
-                go.Scatter(
-                    x=time, y=sum_newton, mode="lines", name=("Vertical force (N)")
-                )
-            )
-            global_fig.add_trace(
-                go.Scatter(
-                    x=global_time,
-                    y=np.array(global_data) / (0.0018 / (fz_range / 2.5)),
-                    mode="lines",
-                    name=("Vertical force (N)"),
-                )
-            )
-            fig.update_layout(
-                margin=dict(l=10, r=10, t=10, b=20),
-                xaxis_title="Temps (s)",
-                yaxis_title="Force (N)",
-            )
-            global_fig.update_layout(
-                margin=dict(l=10, r=10, t=10, b=20),
-                xaxis_title="Temps (s)",
-                yaxis_title="Force (N)",
-            )
-
-            if stored_profile is None:
-                stored_profile = [
-                    [mean_newton],
-                    [mean_velocity],
-                    [mean_power],
-                    [load],
-                ]
-            else:
-                stored_profile[0].append(mean_newton)
-                stored_profile[1].append(mean_velocity)
-                stored_profile[2].append(mean_power)
-                stored_profile[3].append(load)
-
             return (
-                fig,
-                global_fig,
-                round(mean_newton),
-                round(mean_velocity, 2),
-                round(velocity[-1], 2),
-                round(mean_power),
-                stored_profile,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                alert_message,
+                no_update,
             )
+
+        # Process the data if available
+        (
+            time,
+            sum_newton,
+            mean_newton,
+            velocity,
+            mean_velocity,
+            mean_power,
+        ) = analyse_jump(data, weight, load, fz_range)
+
+        global_time = np.linspace(0, len(global_data) / sampling_rate, len(global_data))
+        # Create traces
+        fig = go.Figure()
+        global_fig = go.Figure()
+
+        fig.add_trace(
+            go.Scatter(x=time, y=sum_newton, mode="lines", name=("Vertical force (N)"))
+        )
+        global_fig.add_trace(
+            go.Scatter(
+                x=global_time,
+                y=np.array(global_data) / (0.0018 / (fz_range / 2.5)),
+                mode="lines",
+                name=("Vertical force (N)"),
+            )
+        )
+        fig.update_layout(
+            margin=dict(l=10, r=10, t=10, b=20),
+            xaxis_title="Temps (s)",
+            yaxis_title="Force (N)",
+        )
+        global_fig.update_layout(
+            margin=dict(l=10, r=10, t=10, b=20),
+            xaxis_title="Temps (s)",
+            yaxis_title="Force (N)",
+        )
+
+        if stored_profile is None:
+            stored_profile = [
+                [mean_newton],
+                [mean_velocity],
+                [mean_power],
+                [load],
+            ]
         else:
-            raise PreventUpdate
+            stored_profile[0].append(mean_newton)
+            stored_profile[1].append(mean_velocity)
+            stored_profile[2].append(mean_power)
+            stored_profile[3].append(load)
+
+        return (
+            fig,
+            global_fig,
+            round(mean_newton),
+            round(mean_velocity, 2),
+            round(velocity[-1], 2),
+            round(mean_power),
+            stored_profile,
+            no_update,
+            no_update,
+        )
     if ctx.triggered_id == "profile-reset-button":
-        return no_update, no_update, no_update, no_update, no_update, no_update, None
+        return (
+            no_update,
+            no_update,
+            no_update,
+            no_update,
+            no_update,
+            no_update,
+            None,
+            no_update,
+            no_update,
+        )
 
     if ctx.triggered_id == "datatable-fvp":
         print("data_table_interactivity")
@@ -147,12 +172,27 @@ def data_acquisition_start(start, n, rows, weight, stored_profile, load, fz_rang
                 no_update,
                 no_update,
                 stored_profile,
+                no_update,
+                no_update,
             )
         else:
             raise PreventUpdate
 
 
 def nidaq_trigger(weight, load, fz_range):
+    """
+    Triggers the NI-DAQ device to read data and process it.
+
+    Parameters:
+    weight (float): The user's weight value.
+    load (float): The added load value.
+    fz_range (float): The force range.
+
+    Returns:
+    tuple : The processed data.
+        samples (list): Only the data inside the trigger boundaries. Format :
+        global_samples (list): The raw data.
+    """
     if load is None:
         load = 0
 
@@ -160,126 +200,117 @@ def nidaq_trigger(weight, load, fz_range):
 
     samples = []
     global_samples = []
-    with nidaqmx.Task() as task:
-        task.ai_channels.add_ai_voltage_chan(
-            ",".join(channels), terminal_config=TerminalConfiguration.DIFF
-        )
+    try:
+        with nidaqmx.Task() as task:
+            task.ai_channels.add_ai_voltage_chan(
+                ",".join(channels), terminal_config=TerminalConfiguration.DIFF
+            )
 
-        task.timing.cfg_samp_clk_timing(1000, sample_mode=AcquisitionType.CONTINUOUS)
+            task.timing.cfg_samp_clk_timing(
+                1000, sample_mode=AcquisitionType.CONTINUOUS
+            )
 
-        global trigger_control
-        global measurement_end
-        global last_buffer
-
-        trigger_control = False
-        measurement_end = False
-        last_buffer = []
-
-        def sample_callback(
-            task_handle, every_n_samples_event_type, number_of_samples, callback_data
-        ):
-            """Callback function for reading singals."""
-            print("Every N Samples callback invoked.")
-
-            global samples
             global trigger_control
             global measurement_end
             global last_buffer
 
-            new_data = np.array(task.read(number_of_samples_per_channel=1000))
+            trigger_control = False
+            measurement_end = False
+            last_buffer = []
 
-            new_data_z = np.sum(new_data[-4:], axis=0)
+            def sample_callback(
+                task_handle,
+                every_n_samples_event_type,
+                number_of_samples,
+                callback_data,
+            ):
+                """Callback function for reading signals."""
+                print("Every N Samples callback invoked.")
 
-            global_samples.extend(new_data_z)
+                global samples
+                global trigger_control
+                global measurement_end
+                global last_buffer
 
-            threshold = (weight + load) * 0.0018 / (fz_range / 2.5) * 9.80665
+                # Ensure last_buffer is initialized
+                if "last_buffer" not in globals():
+                    last_buffer = np.array([])
 
-            new_data_z_concat = np.concatenate((last_buffer, new_data_z))
+                new_data = np.array(task.read(number_of_samples_per_channel=1000))
 
-            # Define the threshold
-            above_threshold = new_data_z_concat > (threshold * 1.1)
-            under_threshold = new_data_z_concat < threshold
+                # We only need the last 4 channels, corresponding to the z data
+                new_data_z = np.sum(new_data[-4:], axis=0)
 
-            first_index = len(last_buffer)
+                global_samples.extend(new_data_z)
 
-            last_index = -1
+                ## Compute the threshold with a sensitivity
+                threshold = (weight + load) * 0.0018 / (fz_range / 2.5) * 9.80665
 
-            for i in range(len(last_buffer), len(new_data_z_concat) - 20):
-                # test if the index is really situated at a threshold
-                next_above_threshold = np.all(above_threshold[i : i + 20])
-                next_under_threshold = np.all(under_threshold[i : i + 20])
-                # if the trigger is off and the threshold is detected
-                if not trigger_control and next_above_threshold and not measurement_end:
-                    # find the first occurence in the 100 values before the index i where all the next values are above the threshold
-                    first_index = i - np.argmax(under_threshold[i - 100 : i][::-1])
-                    print("trigger on")
-                    trigger_control = True
-                # if the trigger is on and the data goes under the threshold
-                if trigger_control and next_under_threshold and not measurement_end:
-                    last_index = i
-                    # filter that does not validate the measurement if the length is too short
-                    if (len(samples) + last_index - first_index) > 100:
-                        print("trigger off")
-                        print(first_index)
-                        print(last_index)
-                        samples.extend(new_data_z_concat[first_index:last_index])
-                        measurement_end = True
-                    else:
-                        samples = []
-                        print("trigger off but measurement too short")
-                    trigger_control = False
+                new_data_z_concat = np.concatenate((last_buffer, new_data_z))
 
-            # case if the trigger stays on at the end of the buffer reading
-            if trigger_control:
-                print("trigger control still on at the end of the buffer")
-                samples.extend(new_data_z_concat[first_index:last_index])
+                above_threshold = new_data_z_concat > (threshold * 1.1)
+                under_threshold = new_data_z_concat < threshold
 
-            last_buffer = new_data_z
+                first_index = len(last_buffer)
 
-            return 0
+                last_index = -1
 
-        task.register_every_n_samples_acquired_into_buffer_event(1000, sample_callback)
+                for i in range(len(last_buffer), len(new_data_z_concat) - 20):
+                    # test if the index is really situated at a threshold :
+                    # the 20 next values should be above the threshold
+                    next_above_threshold = np.all(above_threshold[i : i + 20])
+                    next_under_threshold = np.all(under_threshold[i : i + 20])
+                    # if the trigger is off and the threshold is detected
+                    if (
+                        not trigger_control
+                        and next_above_threshold
+                        and not measurement_end
+                    ):
+                        # find the first occurence in the 100 values before the index i where all the next values are above the threshold
+                        first_index = i - np.argmax(under_threshold[i - 100 : i][::-1])
+                        print("trigger on")
+                        trigger_control = True
+                    # if the trigger is on and the data goes under the threshold
+                    if trigger_control and next_under_threshold and not measurement_end:
+                        last_index = i
+                        # filter that does not validate the measurement if the length is too short
+                        if (len(samples) + last_index - first_index) > 100:
+                            print("trigger off")
+                            print(first_index)
+                            print(last_index)
+                            samples.extend(new_data_z_concat[first_index:last_index])
+                            measurement_end = True
+                        else:
+                            samples = []
+                            print("trigger off but measurement too short")
+                        trigger_control = False
 
-        task.start()
+                # case if the trigger stays on at the end of the buffer reading
+                if trigger_control:
+                    print("trigger control still on at the end of the buffer")
+                    samples.extend(new_data_z_concat[first_index:last_index])
 
-        # timeout a bit more than 10s, otherwise there is conflict with the callback if the timeout
-        # falls exactly on a second (for example 10s)
-        timeout = time.time() + 5.5
+                last_buffer = new_data_z
 
-        while True:
-            # check if either the timeout is reached or the samples have been recorded but the trigger is now off
-            if time.time() > timeout or measurement_end:
-                print("break")
-                break
+                return 0
 
-    return samples, global_samples
+            task.register_every_n_samples_acquired_into_buffer_event(
+                1000, sample_callback
+            )
 
+            task.start()
 
-def analyse_jump(data, weight, load, fz_range):
-    num_samples = len(data)
+            # timeout a bit more than 5s, otherwise there is conflict with the callback if the timeout
+            # falls exactly on a second (for example 5s)
+            timeout = time.time() + 5.5
 
-    time = np.linspace(0, num_samples / sampling_rate, num_samples)
+            while True:
+                # check if either the timeout is reached or the samples have been recorded but the trigger is now off
+                if time.time() > timeout or measurement_end:
+                    print("break")
+                    break
 
-    # compute the force and velocity values
-    sum_newton = np.array(data) / (0.0018 / (fz_range / 2.5))
-
-    # force is very straight-forward
-    mean_newton = np.mean(sum_newton)
-
-    # we integrate the force to find the velocity
-    if load is None:
-        load = 0
-
-    # acceleration is proportional to the force at every moment
-    acceleration = (sum_newton / (weight + load)) - 9.80665
-
-    # we find the velocity by doing the integral under the curve of the acceleration
-    velocity = it.cumulative_trapezoid(acceleration, time, initial=0)
-
-    mean_velocity = np.mean(velocity)
-
-    power = sum_newton * velocity
-
-    mean_power = np.mean(power)
-
-    return (time, sum_newton, mean_newton, velocity, mean_velocity, mean_power)
+        return samples, global_samples
+    except nidaqmx.DaqError as e:
+        print(f"An error occurred: {e}")
+        raise PreventUpdate

@@ -126,3 +126,15 @@ footer {
 .export {
   margin: 5px;
 }
+
+/* modal backdrop class - override to avoide bad behavior */
+.modal-open {
+  overflow: auto !important;
+  padding-right: 0 !important;
+}
+
+.justify-end {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+}

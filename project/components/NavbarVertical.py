@@ -1,7 +1,7 @@
 from dash import html
 import dash_bootstrap_components as dbc
 
-sidebar = html.Aside(
+Sidebar = html.Aside(
     html.Div(
         [
             dbc.Nav(
@@ -17,8 +17,11 @@ sidebar = html.Aside(
                     ),
                     html.Hr(),
                     dbc.NavLink(
-                        [html.I(className="fas fa-user-check"), html.Span("Test")],
-                        href="/test",
+                        [
+                            html.I(className="fas fa-chart-line"),
+                            html.Span("Usage simple"),
+                        ],
+                        href="/free-session",
                         active="exact",
                         class_name="pe-3",
                     ),
@@ -31,6 +34,15 @@ sidebar = html.Aside(
                         active="exact",
                         class_name="pe-3",
                     ),
+                    dbc.NavLink(
+                        [
+                            html.I(className="fas fa-book"),
+                            html.Span("Infos"),
+                        ],
+                        href="/documentation",
+                        active="exact",
+                        class_name="pe-3",
+                    ),
                 ],
                 vertical=True,
                 pills=True,
@@ -39,3 +51,10 @@ sidebar = html.Aside(
         className="sidebar",
     )
 )
+
+""" dbc.NavLink(
+[html.I(className="fas fa-user-check"), html.Span("Test")],
+href="/test",
+active="exact",
+class_name="pe-3",
+), """

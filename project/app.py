@@ -1,4 +1,4 @@
-from components import sidebar, Footer, StartStopCalibrate
+from components import Sidebar, Footer, StartStopCalibrate
 
 # manage logins
 from flask_login import LoginManager, UserMixin, current_user
@@ -59,7 +59,7 @@ app.layout = html.Div(
             id="page-content",
             children=[dash.page_container, Footer],
         ),
-        dcc.Store(id="fz-range"),
+        dcc.Store(id="fz-range", data=5),
         dcc.Location(id="url"),
     ]
 )
@@ -70,7 +70,6 @@ app.layout = html.Div(
     Input("range-slider", "value"),
 )
 def set_z_range(value):
-    print(value)
     return value
 
 
@@ -81,7 +80,7 @@ def set_z_range(value):
 def page_wrapper(pathname):
     print(pathname)
     if pathname not in ["/login", "/create_user"]:
-        return sidebar
+        return Sidebar
     else:
         return None
 

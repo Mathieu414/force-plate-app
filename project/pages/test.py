@@ -24,7 +24,11 @@ layout = html.Div(
         dbc.Row(
             [
                 dbc.Col(html.H2("Test Profil Force/Vitesse"), align="center"),
-                dbc.Col(StartStopCalibrate, align="center", class_name="text-center"),
+                dbc.Col(
+                    StartStopCalibrate,
+                    align="center",
+                    class_name="text-center",
+                ),
                 dbc.Col(
                     dbc.Input(
                         placeholder="Charge supplémentaire (kg)",
@@ -37,6 +41,17 @@ layout = html.Div(
                 ),
             ],
             class_name="mb-2",
+        ),
+        # alert div to display informations on the screen
+        html.Div(
+            id="alert-div",
+            style={
+                "position": "fixed",
+                "top": 2,
+                "z-index": "999",
+                "left": "50%",
+                "transform": "translate(-50%, 0)",
+            },
         ),
         dbc.Row(
             [
